@@ -1,7 +1,8 @@
 # imu-predict
 
 说明：
-	１．暂时先采用数据集euroc 中的V1_01_easy 作为整个实验的测试
+	１．文件夹ground_truth　　采用数据集euroc 中的V1_01_easy 作为整个实验的测试 
+	２．文件夹operation_test　一个简单的训练网络，目的是验证当前旋转lossfunction　的可行性
 	
 
 #   step 1:
