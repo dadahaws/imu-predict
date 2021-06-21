@@ -9,7 +9,10 @@ all=torch.stack((a1,a2,a3))
 length=a2.shape[0]
 x1=a2[1:]
 x2=a2[0:length-1]
-print(x1)
-print(x2)
-print(x2[::2])
+# print(x1)
+# print(x2)
+# print(x2[::2])
+size_parm={'seq_len':30,'label_len':20,'pred_len':30 }
+x=size_parm['seq_len']
+print(x)
 

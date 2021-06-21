@@ -10,9 +10,8 @@ import pandas as pd
 import os
 from torch.utils.data import Dataset, DataLoader
 from utils.tools import StandardScaler
-from utils.useful_func import read_data
 import math
-
+from utils.useful_func import read_imu_data,read_quat_data
 # class Quaternion:
 #     def __init__(self,array):
 #         self.w=0
@@ -73,7 +72,7 @@ import math
 #                      x1 * w0 + y1 * z0 - z1 * y0 + w1 * x0,
 #                      -x1 * z0 + y1 * w0 + z1 * x0 + w1 * y0,
 #                      x1 * y0 - y1 * x0 + z1 * w0 + w1 * z0], dtype=np.float64)
-class Quaternion:
+class Quaternion:   ###numpy下测试
     def __init__(self, s, x, y, z):
         """构造函数"""
         self.s = s
@@ -162,8 +161,9 @@ class Quaternion:
     def shape(self):
         return self.array.shape
     def return_value(self):
-        return self.array
+        return self.array####numpy###nupnumpy
 
+####tensor下测试
 def qmul(q, r):
     """
     Multiply quaternion(s) q with quaternion(s) r.
@@ -239,19 +239,20 @@ def q_norm(q):
     q=F.normalize(q, dim=2)
     return q
 
+#####旋转变量上数据
 class pose_estimation(Dataset):
     def __init__(self, root_path, flag='train'
                 , data_path='data.csv' , freq=None,size=None ,batch_size=1):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
-            self.seq_len = 200
-            self.label_len = 50
-            self.pred_len = 50
+            self.seq_len = 30       ###此处设定返回的片段长度
+            self.label_len = 20
+            self.pred_len = 30
         else:
-            self.seq_len = size[0]
-            self.label_len = size[1]
-            self.pred_len = size[2]
+            self.seq_len = size['seq_len']
+            self.label_len = size['label_len']
+            self.pred_len = size['pred_len']
         # init
         assert flag in ['train', 'test', 'val']
         type_map = {'train': 0, 'val': 1, 'test': 2}
@@ -266,67 +267,24 @@ class pose_estimation(Dataset):
         self.__read_data__()
 
     def __read_data__(self):
-        self.scaler = StandardScaler()
-        ori = pd.read_csv(os.path.join(self.data_path))
-        # print("check_path")
-        # print(ori)
-        timestamp=pd.DataFrame(ori,columns=["#timestamp"])
-        quat=pd.DataFrame(ori,columns=[" q_RS_w []"," q_RS_x []"," q_RS_y []"," q_RS_z []"])
-        quat_w=pd.DataFrame(ori,columns=[" q_RS_w []"])
-        quat_x=pd.DataFrame(ori,columns=[" q_RS_x []"])
-        quat_y=pd.DataFrame(ori,columns=[" q_RS_y []"])
-        quat_z = pd.DataFrame(ori, columns=[" q_RS_z []"])
-        ###此处数组化
-        quat = np.array(quat.values)
-        print("check_quat.arry_size")
-        print(quat.shape)
-        ####etc
-        # border1s = [0, 12 * 30 * 24 * 4 - self.seq_len, 12 * 30 * 24 * 4 + 4 * 30 * 24 * 4 - self.seq_len]
-        # border2s = [12 * 30 * 24 * 4, 12 * 30 * 24 * 4 + 4 * 30 * 24 * 4, 12 * 30 * 24 * 4 + 8 * 30 * 24 * 4]
-        # border1 = border1s[self.set_type]
-        # border2 = border2s[self.set_type]
-
-        # if self.features == 'M' or self.features == 'MS':
-        #     cols_data = df_raw.columns[1:]
-        #     df_data = df_raw[cols_data]
-        # elif self.features == 'S':
-        #     df_data = df_raw[[self.target]]
-
-        # if self.scale:
-        #     #####经过此路,需要对数据做归一化
-        #     train_data = df_data[border1s[0]:border2s[0]]
-        #     self.scaler.fit(train_data.values)
-        #     data = self.scaler.transform(df_data.values)
-        #     # print("check_data")
-        #     # print(data)
-        # else:
-        #     data = df_data.va
-        # df_stamp = quat_raw[['date']][border1:border2]
-        # df_stamp['date'] = pd.to_datetime(df_stamp.date)
-        # print("check_df_stamp")
-        # print(df_stamp)#每一行是这些 34556 2017-06-25 23:00:00
-
-        # data_stamp = time_features(df_stamp, timeenc=self.timeenc, freq=self.freq)
-        # print("check_time_featured")
-        # print(data_stamp.shape)
-        # print(data_stamp)
-        self.scaler.fit(quat)
+        self.scaler = StandardScaler()##获得均值，方差信息
+        t,w,a=read_imu_data(self.data_path)
+        self.scaler.fit(w)
 
         ###通过transform　转化为tensor 的形式
-        timestamp=torch.tensor(np.array(timestamp.values))
-        tensor_data = self.scaler.transform(quat)
-        # print("check_tensor_data")
-        # print(tensor_data.shape)
+        t=torch.tensor(t)
+        tensor_data = self.scaler.transform(w)###数据归一化
+
+        print("check_tensor_data")
+        print(tensor_data.shape)
         # print(type(tensor_data))
         #print(tensor_data)
-        self.times = timestamp
+        self.times = t
         self.features=tensor_data
-        # if self.inverse:
-        #     self.data_y = df_data.values[border1:border2]
-        # else:
-        #     self.data_y = data[border1:border2]
-        # self.data_stamp = data_stamp
-
+        print("check_self.times.shape")
+        print(self.times.shape)
+        print("check_feature.shape")
+        print(self.features.shape)
 
     def __getitem__(self, index):
         s_begin = index
@@ -339,128 +297,176 @@ class pose_estimation(Dataset):
         # print(s_end-s_begin)
         # print("check_r_index")
         # print(r_end-r_begin)
-        # print("check_feature.shape")
-        # print(self.features.shape)
-        seq_quat_x = self.features[s_begin:s_end]
-        seq_quat_y = self.features[r_begin:r_end]
-        seq_quat_time_x = self.times[s_begin:s_end]
-        seq_quat_time_y = self.times[r_begin:r_end]
+
+        seq_quat = self.features[s_begin:s_end]
+        time = self.times[s_begin:s_end]
         # print("check_getitem.shape")
-        # print(seq_quat_time_x.shape, seq_quat_x.shape)
-        return seq_quat_time_x, seq_quat_x
+        # print(seq_quat.shape, time.shape)
+        return time, seq_quat
 
     def __len__(self):
+        print("check_索引数量")
+        print(len(self.features) - self.seq_len + 1)
         return len(self.features) - self.seq_len + 1
 
 
+class BiLSTMNet(nn.Module):
+
+    def __init__(self, input_size):
+        super(BiLSTMNet, self).__init__()
+        self.rnn = nn.LSTM(
+            input_size=input_size,
+            hidden_size=64,
+            num_layers=1,
+            batch_first=True,
+            bidirectional=True
+        )
+        self.out = nn.Sequential(
+            nn.Linear(128, 1)
+        )
+
+    def forward(self, x):
+        r_out, (h_n, h_c) = self.rnn(x, None)  # None 表示 hidden state 会用全0的 state
+        out = self.out(r_out[:, -1])
+        print(out.shape)
+        return out
+
+
+class GRUNet(nn.Module):
+
+    def __init__(self, input_size):
+        super(GRUNet, self).__init__()
+        self.rnn = nn.GRU(
+            input_size=input_size,
+            hidden_size=64,
+            num_layers=1,
+            batch_first=True,
+            bidirectional=True
+        )
+        self.out = nn.Sequential(
+            nn.Linear(128, 1)
+        )
+
+    def forward(self, x):
+        r_out, (h_n, h_c) = self.rnn(x, None)  # None 表示 hidden state 会用全0的 state
+        out = self.out(r_out[:, -1])
+        print(out.shape)
+        return out
 
 if __name__ == '__main__':
     root_path="/home/qzd/IMU/informer_op"
-    data_path="/home/qzd/IMU/informer_op/euroc_data/V1_01_easy/mav0/state_groundtruth_estimate0/data.csv"
+    gt_data_path="/home/qzd/IMU/informer_op/test_data/gt_data.csv"
+    imu_data_path="/home/qzd/IMU/informer_op/test_data/imu_data.csv"
     batch_size=20
+    size_parm={'seq_len':30,'label_len':20,'pred_len':30 }
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # pose_dataset=pose_estimation( root_path,
-    #                           flag='train',
-    #                           data_path=data_path ,
-    #                           freq=200,batch_size=batch_size )
-    # train_loader = DataLoader(pose_dataset,
-    #                       batch_size=batch_size,
-    #                       shuffle=False,
-    #                       num_workers=4,
-    #                       drop_last=True)
-    # for i, (stamp,feature) in enumerate(train_loader):
-    # ##mark 代表时间戳数据
-    #     print("check_i")
-    #     print(i)
-    #     # print("check_time")
-    #     # print(stamp.shape)
-    #     # print("check_feature")
-    #     # print(feature.shape)
+    pose_dataset=pose_estimation( root_path,
+                                flag='train',
+                                data_path=imu_data_path ,
+                                freq=200,
+                                size=size_parm,
+                                batch_size=batch_size )
+    train_loader =DataLoader(
+        pose_dataset,
+        batch_size=3,
+        shuffle=False,
+        num_workers=4,
+        drop_last=True)
+    print(train_loader.__len__())
+    for i, (time,feature) in enumerate(train_loader):
+    ##mark 代表时间戳数据
+        print("check_i")
+        print(i)
+        print("check_time")
+        print(time.shape)
+        print("check_feature")
+        print(feature.shape)
 
 
     ###以下实验分为两个部分
     ### 实验一：
     ##验证张量下的 四元数乘法运算
 
-    q1 = Quaternion(0, 2, 4, 6)
-    q2 = Quaternion(1, 3, 5, 7)
-    q3 = Quaternion(2, 3, 4, 5)
-
-    p1 = Quaternion(2, 3, 4, 5)
-    p2 = Quaternion(1, 2, 3, 4)
-    p3 = Quaternion(0, 1, 2, 3)
-    #q2_=q2.inverse()
-    mul_result_1 = q1.__mul__(p1)
-    mul_result_2 = q2.__mul__(p2)
-    mul_result_3 = q3.__mul__(p3)
-
-#####将一维数组从四元数类中取出　并按照 numpy 格式储存
-    arr1 = mul_result_1.return_value()
-    arr2 = mul_result_2.return_value()
-    arr3 = mul_result_3.return_value()
-
-    arr1=np.expand_dims(arr1, axis=0)
-    arr2 = np.expand_dims(arr2, axis=0)
-    arr3 = np.expand_dims(arr3, axis=0)
-
-    arry_mul_result=np.concatenate((arr1, arr2,arr3), axis=0)
-
-    # print("check_mul_on_nparray")
-    # print(arry_mul_result)
-
-#####tensor下做矩阵形式的四元数乘法
-
-    tq1 = torch.tensor(q1.return_value(),dtype=torch.float32)
-    tq2 = torch.tensor(q2.return_value(),dtype=torch.float32)
-    tq3 = torch.tensor(q3.return_value(),dtype=torch.float32)
-    tq_all=torch.stack((tq1, tq2,tq3),dim=0)
-    # print("check_tensor_array")
-    # print(tq_all)
-
-    tp1 = torch.tensor(p1.return_value(),dtype=torch.float32)
-    tp2 = torch.tensor(p2.return_value(),dtype=torch.float32)
-    tp3 = torch.tensor(p3.return_value(),dtype=torch.float32)
-    tp_all = torch.stack((tp1, tp2, tp3),dim=0)
-
-    tensor_mul_result=qmul(tq_all,tp_all)
-    # print("check_tensor_mul_result")
-    # print(tensor_mul_result)
-    "以上测试四元数乘法在　numpy　与tensor 运算结果一致"
-
-    ####实验二：　
-    # 验证四元数在　numpy 与 tensor 下的求逆运算
-    arr_q1 = q1.inverse().return_value()
-    arr_q2 = q2.inverse().return_value()
-    arr_q3 = q3.inverse().return_value()
-    arr_1 = np.expand_dims(arr_q1, axis=0)
-    arr_2 = np.expand_dims(arr_q2, axis=0)
-    arr_3 = np.expand_dims(arr_q3, axis=0)
-
-    numpy_inverse_result = np.concatenate((arr_1, arr_2, arr_3), axis=0)
-    print("check_numpy_inverse_result")
-    print(numpy_inverse_result)
-    print("check_tensor_result_on_inverse")
-    tensor_q_inverse_result=q_inverse(tq_all)
-    print(tensor_q_inverse_result)
-
-    "以上测试四元数求逆（非单位四元数）在　numpy　与tensor 运算结果一致"
-
-    ####实验三：　验证模运算　
-    q_norm=q_norm(tq_all)
-
-    arr_q1 = q1.norm().return_value()
-    arr_q2 = q2.norm().return_value()
-    arr_q3 = q3.norm().return_value()
-    arr_1 = np.expand_dims(arr_q1, axis=0)
-    arr_2 = np.expand_dims(arr_q2, axis=0)
-    arr_3 = np.expand_dims(arr_q3, axis=0)
-    arry_norm_result = np.concatenate((arr_1 ,arr_2 , arr_3), axis=0)
-
-    print("check_norm_on_numpy")
-    print(arry_norm_result)
-    print("check_norm_on_tensor")
-    print(q_norm)
-    "以上测试四元数求模（非单位四元数）在　numpy　与tensor 运算结果一致"
+#     q1 = Quaternion(0, 2, 4, 6)
+#     q2 = Quaternion(1, 3, 5, 7)
+#     q3 = Quaternion(2, 3, 4, 5)
+#
+#     p1 = Quaternion(2, 3, 4, 5)
+#     p2 = Quaternion(1, 2, 3, 4)
+#     p3 = Quaternion(0, 1, 2, 3)
+#     #q2_=q2.inverse()
+#     mul_result_1 = q1.__mul__(p1)
+#     mul_result_2 = q2.__mul__(p2)
+#     mul_result_3 = q3.__mul__(p3)
+#
+# #####将一维数组从四元数类中取出　并按照 numpy 格式储存
+#     arr1 = mul_result_1.return_value()
+#     arr2 = mul_result_2.return_value()
+#     arr3 = mul_result_3.return_value()
+#
+#     arr1=np.expand_dims(arr1, axis=0)
+#     arr2 = np.expand_dims(arr2, axis=0)
+#     arr3 = np.expand_dims(arr3, axis=0)
+#
+#     arry_mul_result=np.concatenate((arr1, arr2,arr3), axis=0)
+#
+#     # print("check_mul_on_nparray")
+#     # print(arry_mul_result)
+#
+# #####tensor下做矩阵形式的四元数乘法
+#
+#     tq1 = torch.tensor(q1.return_value(),dtype=torch.float32)
+#     tq2 = torch.tensor(q2.return_value(),dtype=torch.float32)
+#     tq3 = torch.tensor(q3.return_value(),dtype=torch.float32)
+#     tq_all=torch.stack((tq1, tq2,tq3),dim=0)
+#     # print("check_tensor_array")
+#     # print(tq_all)
+#
+#     tp1 = torch.tensor(p1.return_value(),dtype=torch.float32)
+#     tp2 = torch.tensor(p2.return_value(),dtype=torch.float32)
+#     tp3 = torch.tensor(p3.return_value(),dtype=torch.float32)
+#     tp_all = torch.stack((tp1, tp2, tp3),dim=0)
+#
+#     tensor_mul_result=qmul(tq_all,tp_all)
+#     # print("check_tensor_mul_result")
+#     # print(tensor_mul_result)
+#     "以上测试四元数乘法在　numpy　与tensor 运算结果一致"
+#
+#     ####实验二：　
+#     # 验证四元数在　numpy 与 tensor 下的求逆运算
+#     arr_q1 = q1.inverse().return_value()
+#     arr_q2 = q2.inverse().return_value()
+#     arr_q3 = q3.inverse().return_value()
+#     arr_1 = np.expand_dims(arr_q1, axis=0)
+#     arr_2 = np.expand_dims(arr_q2, axis=0)
+#     arr_3 = np.expand_dims(arr_q3, axis=0)
+#
+#     numpy_inverse_result = np.concatenate((arr_1, arr_2, arr_3), axis=0)
+#     print("check_numpy_inverse_result")
+#     print(numpy_inverse_result)
+#     print("check_tensor_result_on_inverse")
+#     tensor_q_inverse_result=q_inverse(tq_all)
+#     print(tensor_q_inverse_result)
+#
+#     "以上测试四元数求逆（非单位四元数）在　numpy　与tensor 运算结果一致"
+#
+#     ####实验三：　验证模运算　
+#     q_norm=q_norm(tq_all)
+#
+#     arr_q1 = q1.norm().return_value()
+#     arr_q2 = q2.norm().return_value()
+#     arr_q3 = q3.norm().return_value()
+#     arr_1 = np.expand_dims(arr_q1, axis=0)
+#     arr_2 = np.expand_dims(arr_q2, axis=0)
+#     arr_3 = np.expand_dims(arr_q3, axis=0)
+#     arry_norm_result = np.concatenate((arr_1 ,arr_2 , arr_3), axis=0)
+#
+#     print("check_norm_on_numpy")
+#     print(arry_norm_result)
+#     print("check_norm_on_tensor")
+#     print(q_norm)
+#     "以上测试四元数求模（非单位四元数）在　numpy　与tensor 运算结果一致"
 
 
 
