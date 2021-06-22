@@ -1,8 +1,10 @@
 import pandas as pd
 import os
 import numpy as np
+import torch
+from operation_test.quat import *
 #from operation_test.quat import *
-def read_quat_data(csv_path):
+def read_quat_data_csv(csv_path):
     ori = pd.read_csv(csv_path)
         # print("check_path")
         # print(ori)
@@ -16,8 +18,21 @@ def read_quat_data(csv_path):
     timestamp=np.array(timestamp.values)
     quat = np.array(quat.values)
     return timestamp,quat
+def read_delta_quat_txt(txt_path):
+    result=[]
+    with open(txt_path, "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            line=line.strip().split(' ')
+            nums = list(map(float, line))
+            #print(nums)
+            result.append(nums)
+        result=np.array(result)
+    f.close()
+    return result
 
-def read_imu_data(csv_path):
+
+def read_imu_data_csv(csv_path):
     ori = pd.read_csv(csv_path)
         # print("check_path")
         # print(ori)
@@ -30,6 +45,24 @@ def read_imu_data(csv_path):
     w = np.array(w.values)
     a = np.array(a.values)
     return timestamp,w,a
+
+def read_imu_data_txt(txt_path):
+    result=[]
+    with open(txt_path, "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            line = line.split(',')
+            nums = list(map(float, line))
+            result.append(nums)
+        result=np.array(result)
+        # print(result.shape)
+        # print(result)
+    t=result[:,0]
+    w=result[:,0:3]
+    a=result[:,3:6]
+    f.close()
+    return t,w,a
+
 
 def get_delta_q_from_data(quat,d_f):
     delta_frame=d_f ###每相邻x帧取　delta_q 此处设为１
@@ -44,7 +77,7 @@ def get_delta_q_from_data(quat,d_f):
     delta=qmul(q2,q1)
     # print(delta)
     #delta=torch.exp(delta, out=None)
-    print(delta)
+    #print(delta)
     #delta=torch.log(delta, out=None)
     #print(delta)
 
@@ -57,22 +90,28 @@ def write_delta_q_data(quat):#####传入numpy数据
         print("该数据类型为tensor")
         quat=quat.squeeze(1).numpy()
     print("保存至txt")
-    print(quat)
+    #print(quat)
     np.savetxt('/home/qzd/IMU/informer_op/operation_test/delta_q_data.txt', quat, fmt='%.8f', delimiter=" ")
-
 
 
 
 
     pass
 if __name__ == '__main__':
-    gt_path="/home/qzd/IMU/imu-predict/data/gt_data.csv"
-    imu_path="/home/qzd/IMU/imu-predict/data/imu_data.csv"
+    gt_path="/home/qzd/IMU/informer_op/test_dataset/gt_data.csv"
+    imu_path="/home/qzd/IMU/informer_op/test_dataset/imu_data.csv"
+    imu_path_txt="/home/qzd/IMU/informer_op/test_dataset/real_imu.txt"
     d_frame=30
-    gt_times,quat=read_quat_data(gt_path)##从gt中读取q的真值
-    imu_times,w,a=read_imu_data(imu_path)####从imu原始数据中读取量测值
+    gt_times,quat=read_quat_data_csv(gt_path)##从gt中读取q的真值
+    imu_times,w,a=read_imu_data_txt(imu_path_txt)####从imu原始数据中读取量测值
+    print("check_quat.shape")
     print(quat.shape)
+    print("check_w.shape")
+    print(w.shape)
+    print("check_a.shape")
+    print(a.shape)
     delta_q=get_delta_q_from_data(quat,d_frame)
     write_delta_q_data(delta_q)
+    read_imu_data_txt(imu_path_txt)
 
 

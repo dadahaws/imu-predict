@@ -11,7 +11,9 @@ import os
 from torch.utils.data import Dataset, DataLoader
 from utils.tools import StandardScaler
 import math
-from utils.useful_func import read_imu_data,read_quat_data
+from utils.useful_func import *
+from torch.autograd import Variable
+
 # class Quaternion:
 #     def __init__(self,array):
 #         self.w=0
@@ -239,10 +241,12 @@ def q_norm(q):
     q=F.normalize(q, dim=2)
     return q
 
+
+
 #####旋转变量上数据
 class pose_estimation(Dataset):
-    def __init__(self, root_path, flag='train'
-                , data_path='data.csv' , freq=None,size=None ,batch_size=1):
+    def __init__(self, root_path,imu_data_path,delta_data_path,
+                 flag='train',freq=None,size=None ,batch_size=1):
         # size [seq_len, label_len, pred_len]
         # info
         if size == None:
@@ -263,28 +267,33 @@ class pose_estimation(Dataset):
         # self.freq = freq
 
         self.root_path = root_path
-        self.data_path = data_path
+        self.gt_data_path = gt_data_path
+        self.imu_data_path=imu_data_path
+        self.delta_data_path=delta_data_path
         self.__read_data__()
 
     def __read_data__(self):
+        delta_quat=read_delta_quat_txt(self.delta_data_path)
+        t, w, a = read_imu_data_txt(self.imu_data_path)
+
         self.scaler = StandardScaler()##获得均值，方差信息
-        t,w,a=read_imu_data(self.data_path)
         self.scaler.fit(w)
 
         ###通过transform　转化为tensor 的形式
         t=torch.tensor(t)
         tensor_data = self.scaler.transform(w)###数据归一化
 
-        print("check_tensor_data")
-        print(tensor_data.shape)
         # print(type(tensor_data))
         #print(tensor_data)
         self.times = t
         self.features=tensor_data
-        print("check_self.times.shape")
-        print(self.times.shape)
-        print("check_feature.shape")
-        print(self.features.shape)
+        self.targets=delta_quat
+        # print("check_self.times.shape")
+        # print(self.times.shape)
+        # print("check_feature.shape")
+        # print(self.features.shape)
+        # print("check_target.shape")
+        # print(self.targets.shape)
 
     def __getitem__(self, index):
         s_begin = index
@@ -298,16 +307,17 @@ class pose_estimation(Dataset):
         # print("check_r_index")
         # print(r_end-r_begin)
 
-        seq_quat = self.features[s_begin:s_end]
         time = self.times[s_begin:s_end]
+        seq_w = self.features[s_begin:s_end]
+        delta_q=self.targets[s_begin]
         # print("check_getitem.shape")
         # print(seq_quat.shape, time.shape)
-        return time, seq_quat
+        return time,  seq_w ,delta_q
 
     def __len__(self):
-        print("check_索引数量")
-        print(len(self.features) - self.seq_len + 1)
-        return len(self.features) - self.seq_len + 1
+        print("检查索引上限")####所有样本数量
+        print(len(self.features) - self.seq_len )
+        return len(self.features) - self.seq_len
 
 
 class BiLSTMNet(nn.Module):
@@ -344,45 +354,72 @@ class GRUNet(nn.Module):
             bidirectional=True
         )
         self.out = nn.Sequential(
-            nn.Linear(128, 1)
+            nn.Linear(128, 4)
         )
 
     def forward(self, x):
         r_out, (h_n, h_c) = self.rnn(x, None)  # None 表示 hidden state 会用全0的 state
         out = self.out(r_out[:, -1])
-        print(out.shape)
         return out
+
+
 
 if __name__ == '__main__':
     root_path="/home/qzd/IMU/informer_op"
-    gt_data_path="/home/qzd/IMU/informer_op/test_data/gt_data.csv"
-    imu_data_path="/home/qzd/IMU/informer_op/test_data/imu_data.csv"
-    batch_size=20
+    gt_data_path="/home/qzd/IMU/informer_op/test_dataset/gt_data.csv"
+    imu_data_path="/home/qzd/IMU/informer_op/test_dataset/real_imu.txt"
+    delta_data_path="/home/qzd/IMU/informer_op/test_dataset/delta_q_data.txt"
+    batch_size=10
     size_parm={'seq_len':30,'label_len':20,'pred_len':30 }
+    net = GRUNet(3).double()
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, weight_decay=0.001)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    pose_dataset=pose_estimation( root_path,
+    pose_dataset=pose_estimation( root_path=root_path,
+                                imu_data_path=imu_data_path,
+                                  delta_data_path=delta_data_path,
                                 flag='train',
-                                data_path=imu_data_path ,
                                 freq=200,
                                 size=size_parm,
                                 batch_size=batch_size )
     train_loader =DataLoader(
         pose_dataset,
-        batch_size=3,
-        shuffle=False,
+        batch_size=batch_size,
+        shuffle=True,
         num_workers=4,
         drop_last=True)
-    print(train_loader.__len__())
-    for i, (time,feature) in enumerate(train_loader):
+    # print(train_loader.__len__())
+    # print("check_length_train_loader")
+    # print(len(train_loader))
+    for e in range(1000):
+        for i, (time,feature,target) in enumerate(train_loader):###此处ｉ受到batch影响
     ##mark 代表时间戳数据
-        print("check_i")
-        print(i)
-        print("check_time")
-        print(time.shape)
-        print("check_feature")
-        print(feature.shape)
-
+        # print("check_i")
+        # print(i)
+        # print("check_time")
+        # print(time.shape)
+        # print("check_feature")
+        # print(feature.shape)
+        # print("check_target")
+        # print(target.shape)
+            var_x = Variable(feature)
+            var_y = Variable(target)
+            out = net(var_x)
+        # print("check_out.shape")
+        # print(out.shape)
+        # print("check_vary.shape")
+        # print(var_y.shape)
+            loss = criterion(out, var_y)
+            # print("check_loss.shape")
+            # print(loss.item())
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            if i%100==0 :
+                print('Epoch: {}, iter : {} Loss: {:.5f}'.format(e + 1,i, loss.item()))
+            #if (e + 1) % 100 == 0:  # 每 100 次输出结果
+                #torch.save(obj=net.state_dict(), f='models/lstmnetpro_gru_%d.pth' % (e + 1))
 
     ###以下实验分为两个部分
     ### 实验一：
