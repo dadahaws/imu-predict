@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import math
 
 class PositionalEmbedding(nn.Module):
-    def __init__(self, d_model, max_len=5000):
+    def __init__(self, d_model, max_len=500):
         super(PositionalEmbedding, self).__init__()
         # Compute the positional encodings once in log space.
         pe = torch.zeros(max_len, d_model).float()
@@ -35,6 +35,9 @@ class TokenEmbedding(nn.Module):
 
     def forward(self, x):
         x = self.tokenConv(x.permute(0, 2, 1)).transpose(1,2)
+        # print("x.shape")
+        # print(x.shape)#torch.Size([4, 100, 64])
+
         return x
 
 class FixedEmbedding(nn.Module):
@@ -98,12 +101,20 @@ class DataEmbedding(nn.Module):
         super(DataEmbedding, self).__init__()
 
         self.value_embedding = TokenEmbedding(c_in=c_in, d_model=d_model)
+        #编码 只是改变了特征维度
         self.position_embedding = PositionalEmbedding(d_model=d_model)
-        self.temporal_embedding = TemporalEmbedding(d_model=d_model, embed_type=embed_type, freq=freq) if embed_type!='timeF' else TimeFeatureEmbedding(d_model=d_model, embed_type=embed_type, freq=freq)
+        # torch.Size([1, 7(batch), 64(d_model)])
+        #self.temporal_embedding = TemporalEmbedding(d_model=d_model, embed_type=embed_type, freq=freq) if embed_type!='timeF' else TimeFeatureEmbedding(d_model=d_model, embed_type=embed_type, freq=freq)
 
         self.dropout = nn.Dropout(p=dropout)
 
-    def forward(self, x, x_mark):
-        x = self.value_embedding(x) + self.position_embedding(x) + self.temporal_embedding(x_mark)
+    def forward(self, x):###取消  x_mark
+        print("check_decode_1")
+        print(self.value_embedding(x).shape)
+        print("check_decode_2")
+        print(self.position_embedding(x).shape)
+
+        x=self.value_embedding(x) + self.position_embedding(x)
+        #x = self.value_embedding(x) + self.position_embedding(x) + self.temporal_embedding(x_mark)
         
         return self.dropout(x)

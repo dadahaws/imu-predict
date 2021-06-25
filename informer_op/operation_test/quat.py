@@ -74,7 +74,7 @@ from torch.autograd import Variable
 #                      x1 * w0 + y1 * z0 - z1 * y0 + w1 * x0,
 #                      -x1 * z0 + y1 * w0 + z1 * x0 + w1 * y0,
 #                      x1 * y0 - y1 * x0 + z1 * w0 + w1 * z0], dtype=np.float64)
-class Quaternion:   ###numpy下测试
+class Quaternion_arr:   ###numpy下测试
     def __init__(self, s, x, y, z):
         """构造函数"""
         self.s = s
@@ -178,7 +178,9 @@ def qmul(q, r):
     original_shape = q.shape
 
     # Compute outer product
-    terms = torch.bmm(r.view(-1, 4, 1), q.view(-1, 1, 4))
+    print(type(r))
+    print(type(q))
+    terms = torch.bmm(r.view(-1, 4, 1).float(), q.view(-1, 1, 4).float())
 
     w = terms[:, 0, 0] - terms[:, 1, 1] - terms[:, 2, 2] - terms[:, 3, 3]
     x = terms[:, 0, 1] + terms[:, 1, 0] - terms[:, 2, 3] + terms[:, 3, 2]
@@ -241,7 +243,98 @@ def q_norm(q):
     q=F.normalize(q, dim=2)
     return q
 
+def quat_distance(q1,q2):
+    q2 = q_inverse(q2)
+    delta = qmul(q2, q1)
+    return delta
+def loss_func_quat_norm(out,var_y,parm1,iteration):
+    if iteration%1000==0:
+        print(out)
+    loss1 = criterion1(out, var_y)
+    delta_one = torch.ones(batch_size).float()
+    # print("check_out.shape")
+    # print(out.shape)
+    delta = torch.sum(torch.pow(out, 2), dim=1).float()
+    loss2 = criterion2(delta, delta_one)
+    # loss=criterion.forward(out,var_y)
+    # print("check_loss.shape")
+    # print(loss)
+    all_loss = loss1 + loss2
+    return all_loss
 
+class quat_loss(nn.Module):
+    def __init__(self):
+        super(quat_loss,self).__init__()
+
+
+    def qmul(q, r):
+        """
+        Multiply quaternion(s) q with quaternion(s) r.
+        Expects two equally-sized tensors of shape (*, 4), where * denotes any number of dimensions.
+        Returns q*r as a tensor of shape (*, 4).
+        """
+        assert q.shape[-1] == 4
+        assert r.shape[-1] == 4
+
+        original_shape = q.shape
+
+        # Compute outer product
+        terms = torch.bmm(r.view(-1, 4, 1), q.view(-1, 1, 4))
+
+        w = terms[:, 0, 0] - terms[:, 1, 1] - terms[:, 2, 2] - terms[:, 3, 3]
+        x = terms[:, 0, 1] + terms[:, 1, 0] - terms[:, 2, 3] + terms[:, 3, 2]
+        y = terms[:, 0, 2] + terms[:, 1, 3] + terms[:, 2, 0] - terms[:, 3, 1]
+        z = terms[:, 0, 3] - terms[:, 1, 2] + terms[:, 2, 1] + terms[:, 3, 0]
+        return torch.stack((w, x, y, z), dim=1).view(original_shape)
+
+    def q_inverse(q):
+        assert q.shape[-1] == 4
+        q_length = q.shape[0]
+        original_shape = q.shape
+
+        t_q = q.view(-1, 1, 4)
+
+        ###求q　的摸的平方
+        q_norm = torch.pow(q, 2, out=None)
+        q_norm = torch.sum(q_norm, dim=1)
+
+        q_norm = q_norm.expand(4, -1).transpose(0, 1).unsqueeze(1)  ##将一维向量扩展
+        q_norm = torch.reciprocal(q_norm, out=None)
+
+        tmp = torch.tensor([1, -1, -1, -1], dtype=torch.float64)  ###取共轭
+        tmp = tmp.expand(q_length, -1).contiguous().unsqueeze(1)
+        terms = torch.mul(t_q, tmp)
+        q = torch.mul(terms, q_norm)  ###q*/|| q ||^2
+
+        return q
+
+    def q_norm(q):
+        assert q.shape[-1] == 4
+        q = q.view(-1, 1, 4)
+        q = F.normalize(q, dim=2)
+        return q
+
+    def quat_distance(q1, q2):
+        q2 = q_inverse(q2)
+        delta = qmul(q2, q1)
+        return delta
+
+    def forward(self,x1,x2):
+        distance=quat_distance(x1, x2)
+        # print(x1.shape)#(w,h)
+        # print(x1)
+        # print(x2.shape)  # (w,h)
+        # print(x2)
+        # print("check_distance")
+        # print(distance.shape)
+        delta_one=torch.zeros_like(distance)
+        delta_one[:,:,0]=-1.0
+        result=torch.add(distance,delta_one)
+        # print(result)
+        loss=torch.mean(result)
+        # print("check_loss")
+        # print(loss)
+        return loss
 
 #####旋转变量上数据
 class pose_estimation(Dataset):
@@ -288,12 +381,10 @@ class pose_estimation(Dataset):
         self.times = t
         self.features=tensor_data
         self.targets=delta_quat
-        # print("check_self.times.shape")
-        # print(self.times.shape)
-        # print("check_feature.shape")
-        # print(self.features.shape)
-        # print("check_target.shape")
-        # print(self.targets.shape)
+        print("check_feature.shape")
+        print(self.features.shape)
+        print("check_target.shape")
+        print(self.targets.shape)
 
     def __getitem__(self, index):
         s_begin = index
@@ -319,7 +410,6 @@ class pose_estimation(Dataset):
         print(len(self.features) - self.seq_len )
         return len(self.features) - self.seq_len
 
-
 class BiLSTMNet(nn.Module):
 
     def __init__(self, input_size):
@@ -341,7 +431,6 @@ class BiLSTMNet(nn.Module):
         print(out.shape)
         return out
 
-
 class GRUNet(nn.Module):
 
     def __init__(self, input_size):
@@ -356,23 +445,24 @@ class GRUNet(nn.Module):
         self.out = nn.Sequential(
             nn.Linear(128, 4)
         )
+        self.h0=torch.randn(2, 32, 64).float()
 
     def forward(self, x):
-        r_out, (h_n, h_c) = self.rnn(x, None)  # None 表示 hidden state 会用全0的 state
+        r_out, (h_n, h_c) = self.rnn(x, self.h0)  # None 表示 hidden state 会用全0的 state
         out = self.out(r_out[:, -1])
         return out
-
-
 
 if __name__ == '__main__':
     root_path="/home/qzd/IMU/informer_op"
     gt_data_path="/home/qzd/IMU/informer_op/test_dataset/gt_data.csv"
     imu_data_path="/home/qzd/IMU/informer_op/test_dataset/real_imu.txt"
     delta_data_path="/home/qzd/IMU/informer_op/test_dataset/delta_q_data.txt"
-    batch_size=10
+    batch_size=32
     size_parm={'seq_len':30,'label_len':20,'pred_len':30 }
-    net = GRUNet(3).double()
-    criterion = nn.MSELoss()
+    net = GRUNet(3)
+    #criterion = nn.MSELoss()
+    criterion1 = quat_loss()
+    criterion2 =nn.MSELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=0.0001, weight_decay=0.001)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -405,14 +495,12 @@ if __name__ == '__main__':
         # print(target.shape)
             var_x = Variable(feature)
             var_y = Variable(target)
-            out = net(var_x)
-        # print("check_out.shape")
-        # print(out.shape)
-        # print("check_vary.shape")
-        # print(var_y.shape)
-            loss = criterion(out, var_y)
-            # print("check_loss.shape")
-            # print(loss.item())
+            out = net(var_x.float())
+            # print("check_out.shape")
+            # print(out.shape)
+            # print("check_vary.shape")
+            # print(var_y.shape)
+            loss=loss_func_quat_norm(out,var_y,parm1=10,iteration=i)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()

@@ -48,8 +48,8 @@ class pose_estimation(Dataset):
         quat_z = pd.DataFrame(ori, columns=[" q_RS_z []"])
         ###此处数组化
         quat = np.array(quat.values)
-        print("check_quat.arry_size")
-        print(quat.shape)
+        # print("check_quat.arry_size")
+        # print(quat.shape)
         ####etc
         # border1s = [0, 12 * 30 * 24 * 4 - self.seq_len, 12 * 30 * 24 * 4 + 4 * 30 * 24 * 4 - self.seq_len]
         # border2s = [12 * 30 * 24 * 4, 12 * 30 * 24 * 4 + 4 * 30 * 24 * 4, 12 * 30 * 24 * 4 + 8 * 30 * 24 * 4]
@@ -123,18 +123,20 @@ class pose_estimation(Dataset):
         return len(self.features) - self.seq_len + 1
 
 class Informer(nn.Module):
-    def __init__(self, enc_in, dec_in, c_out, seq_len, label_len, out_len, 
+    def __init__(self, enc_in, dec_in, c_out, seq_len, label_len, pred_len,
                 factor=5, d_model=512, n_heads=8, e_layers=3, d_layers=2, d_ff=512, 
                 dropout=0.0, attn='prob', embed='fixed', freq='h', activation='gelu', 
                 output_attention = False, distil=True, mix=True,
                 device=torch.device('cuda:0')):
         super(Informer, self).__init__()
-        self.pred_len = out_len
+        self.pred_len = pred_len
         self.attn = attn
         self.output_attention = output_attention
 
         # Encoding
+                    ###注意此处　enc_in 应该与 features 的维度相同
         self.enc_embedding = DataEmbedding(enc_in, d_model, embed, freq, dropout)
+                    ###注意此处　dec_in 应该与 gt 值的维度相同
         self.dec_embedding = DataEmbedding(dec_in, d_model, embed, freq, dropout)
         # Attention
         Attn = ProbAttention if attn=='prob' else FullAttention
@@ -149,12 +151,12 @@ class Informer(nn.Module):
                     dropout=dropout,
                     activation=activation
                 ) for l in range(e_layers)
-            ],
+            ],#####重复attentionlayers e_layers=2 次
             [
                 ConvLayer(
                     d_model
-                ) for l in range(e_layers-1)
-            ] if distil else None,
+                ) for l in range(e_layers-1) # ConvLayer层比AttentionLayer层数少１
+            ] if distil else None,####是否选择蒸馏
             norm_layer=torch.nn.LayerNorm(d_model)
         )
         # Decoder
@@ -178,14 +180,21 @@ class Informer(nn.Module):
         # self.end_conv2 = nn.Conv1d(in_channels=d_model, out_channels=c_out, kernel_size=1, bias=True)
         self.projection = nn.Linear(d_model, c_out, bias=True)
         
-    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, 
+    def forward(self, x_enc, x_dec,
                 enc_self_mask=None, dec_self_mask=None, dec_enc_mask=None):
-        enc_out = self.enc_embedding(x_enc, x_mark_enc)
+        enc_out = self.enc_embedding(x_enc)
+        # print(enc_out.shape) # torch.Size([4, 100, 64])
+        #####　编码
         enc_out, attns = self.encoder(enc_out, attn_mask=enc_self_mask)
-
-        dec_out = self.dec_embedding(x_dec, x_mark_dec)
+        #print(enc_out.shape) # torch.Size([4, 27, 64])
+        #print(attns)####  none
+        dec_out = self.dec_embedding(x_dec)
+        #print(dec_out.shape) #torch.Size([4, 100, 64])
+        
+        ##### 　解码
         dec_out = self.decoder(dec_out, enc_out, x_mask=dec_self_mask, cross_mask=dec_enc_mask)
-        dec_out = self.projection(dec_out)
+        #print (dec_out.shape)#torch.Size([4, 100, 64])
+        dec_out = self.projection(dec_out)####通过一个全连接将　64 维转化为　4维
         
         # dec_out = self.end_conv1(dec_out)
         # dec_out = self.end_conv2(dec_out.transpose(2,1)).transpose(1,2)

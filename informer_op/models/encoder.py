@@ -61,13 +61,22 @@ class Encoder(nn.Module):
 
     def forward(self, x, attn_mask=None):
         # x [B, L, D]
+        # print("check_inner_x.shape")
+        # print(x.shape)######此处的x　就是４维向量经过编码得到的64维向量
         attns = []
         if self.conv_layers is not None:
+            #this way   进入的数据会流向每一个attention模块　
             for attn_layer, conv_layer in zip(self.attn_layers, self.conv_layers):
-                x, attn = attn_layer(x, attn_mask=attn_mask)
+                # print("check_cal_x.shape")
+                # print(x.shape)
+                x, attn = attn_layer(x, attn_mask=attn_mask) ###使x按照串联顺序流入编码器
+                # print("mid_x.shape")
+                # print(x.shape)
+                ##print(attn.shape) none
                 x = conv_layer(x)
                 attns.append(attn)
-            x, attn = self.attn_layers[-1](x)
+
+            x, attn = self.attn_layers[-1](x)##最后一个编码器没有convlayer,因此单独使用attn_layers的最后一层
             attns.append(attn)
         else:
             for attn_layer in self.attn_layers:
@@ -76,7 +85,8 @@ class Encoder(nn.Module):
 
         if self.norm is not None:
             x = self.norm(x)
-
+        # print("check_x_result")
+        # print(x.shape)
         return x, attns
 
 class EncoderStack(nn.Module):

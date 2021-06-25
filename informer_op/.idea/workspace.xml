@@ -15,15 +15,15 @@
     </option>
   </component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/utils/timefeatures.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/operation_test/one_test.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/basic/quat_informer.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/main_informer_quat.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/operation_test/rnn_lstm_gru.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/utils/useful_func.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/utils/tools.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/utils/timefeatures.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/basic/quat_informer.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/models/model.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/operation_test/quat.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/utils/useful_func.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/utils/tools.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/data/data_loader.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/operation_test/simple_lstm_sin_cos.py" root0="SKIP_INSPECTION" />
   </component>
@@ -34,7 +34,7 @@
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../TLIO-master" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../QuaterNet" />
     <property name="settings.editor.selected.configurable" value="reference.settingsdialog.IDE.editor.colors.Python" />
   </component>
   <component name="RecentsManager">
@@ -44,7 +44,28 @@
       <recent name="$PROJECT_DIR$/utils" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.quat">
+  <component name="RunManager" selected="Python.useful_func">
+    <configuration name="numpy_op" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Informer2020" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/operation_test" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/operation_test/numpy_op.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="one_test" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Informer2020" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -79,27 +100,6 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/operation_test/quat.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="simple_lstm_sin_cos" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="Informer2020" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/operation_test" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/operation_test/simple_lstm_sin_cos.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -152,11 +152,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.quat" />
-        <item itemvalue="Python.one_test" />
         <item itemvalue="Python.useful_func" />
-        <item itemvalue="Python.simple_lstm_sin_cos" />
+        <item itemvalue="Python.quat" />
         <item itemvalue="Python.tensor_op" />
+        <item itemvalue="Python.numpy_op" />
+        <item itemvalue="Python.one_test" />
       </list>
     </recent_temporary>
   </component>
@@ -172,42 +172,42 @@
     <servers />
   </component>
   <component name="WindowStateProjectService">
-    <state x="731" y="257" width="530" height="598" key="FileChooserDialogImpl" timestamp="1624270757240">
+    <state x="731" y="257" width="530" height="598" key="FileChooserDialogImpl" timestamp="1624441412910">
       <screen x="83" y="34" width="1837" height="1046" />
     </state>
-    <state x="731" y="257" width="530" height="598" key="FileChooserDialogImpl/83.34.1837.1046@83.34.1837.1046" timestamp="1624270757240" />
-    <state width="1809" height="160" key="GridCell.Tab.0.bottom" timestamp="1624286720305">
+    <state x="731" y="257" width="530" height="598" key="FileChooserDialogImpl/83.34.1837.1046@83.34.1837.1046" timestamp="1624441412910" />
+    <state width="1781" height="325" key="GridCell.Tab.0.bottom" timestamp="1624453440365">
       <screen x="83" y="34" width="1837" height="1046" />
     </state>
-    <state width="1809" height="160" key="GridCell.Tab.0.bottom/83.34.1837.1046@83.34.1837.1046" timestamp="1624286720305" />
-    <state width="1809" height="160" key="GridCell.Tab.0.center" timestamp="1624286720305">
+    <state width="1781" height="325" key="GridCell.Tab.0.bottom/83.34.1837.1046@83.34.1837.1046" timestamp="1624453440365" />
+    <state width="1781" height="325" key="GridCell.Tab.0.center" timestamp="1624453440365">
       <screen x="83" y="34" width="1837" height="1046" />
     </state>
-    <state width="1809" height="160" key="GridCell.Tab.0.center/83.34.1837.1046@83.34.1837.1046" timestamp="1624286720305" />
-    <state width="1809" height="160" key="GridCell.Tab.0.left" timestamp="1624286720304">
+    <state width="1781" height="325" key="GridCell.Tab.0.center/83.34.1837.1046@83.34.1837.1046" timestamp="1624453440365" />
+    <state width="1781" height="325" key="GridCell.Tab.0.left" timestamp="1624453440365">
       <screen x="83" y="34" width="1837" height="1046" />
     </state>
-    <state width="1809" height="160" key="GridCell.Tab.0.left/83.34.1837.1046@83.34.1837.1046" timestamp="1624286720304" />
-    <state width="1809" height="160" key="GridCell.Tab.0.right" timestamp="1624286720305">
+    <state width="1781" height="325" key="GridCell.Tab.0.left/83.34.1837.1046@83.34.1837.1046" timestamp="1624453440365" />
+    <state width="1781" height="325" key="GridCell.Tab.0.right" timestamp="1624453440365">
       <screen x="83" y="34" width="1837" height="1046" />
     </state>
-    <state width="1809" height="160" key="GridCell.Tab.0.right/83.34.1837.1046@83.34.1837.1046" timestamp="1624286720305" />
-    <state width="1809" height="325" key="GridCell.Tab.1.bottom" timestamp="1624286720301">
+    <state width="1781" height="325" key="GridCell.Tab.0.right/83.34.1837.1046@83.34.1837.1046" timestamp="1624453440365" />
+    <state width="1781" height="325" key="GridCell.Tab.1.bottom" timestamp="1624453440366">
       <screen x="83" y="34" width="1837" height="1046" />
     </state>
-    <state width="1809" height="325" key="GridCell.Tab.1.bottom/83.34.1837.1046@83.34.1837.1046" timestamp="1624286720301" />
-    <state width="1809" height="325" key="GridCell.Tab.1.center" timestamp="1624286720300">
+    <state width="1781" height="325" key="GridCell.Tab.1.bottom/83.34.1837.1046@83.34.1837.1046" timestamp="1624453440366" />
+    <state width="1781" height="325" key="GridCell.Tab.1.center" timestamp="1624453440365">
       <screen x="83" y="34" width="1837" height="1046" />
     </state>
-    <state width="1809" height="325" key="GridCell.Tab.1.center/83.34.1837.1046@83.34.1837.1046" timestamp="1624286720300" />
-    <state width="1809" height="325" key="GridCell.Tab.1.left" timestamp="1624286720300">
+    <state width="1781" height="325" key="GridCell.Tab.1.center/83.34.1837.1046@83.34.1837.1046" timestamp="1624453440365" />
+    <state width="1781" height="325" key="GridCell.Tab.1.left" timestamp="1624453440365">
       <screen x="83" y="34" width="1837" height="1046" />
     </state>
-    <state width="1809" height="325" key="GridCell.Tab.1.left/83.34.1837.1046@83.34.1837.1046" timestamp="1624286720300" />
-    <state width="1809" height="325" key="GridCell.Tab.1.right" timestamp="1624286720300">
+    <state width="1781" height="325" key="GridCell.Tab.1.left/83.34.1837.1046@83.34.1837.1046" timestamp="1624453440365" />
+    <state width="1781" height="325" key="GridCell.Tab.1.right" timestamp="1624453440366">
       <screen x="83" y="34" width="1837" height="1046" />
     </state>
-    <state width="1809" height="325" key="GridCell.Tab.1.right/83.34.1837.1046@83.34.1837.1046" timestamp="1624286720300" />
+    <state width="1781" height="325" key="GridCell.Tab.1.right/83.34.1837.1046@83.34.1837.1046" timestamp="1624453440366" />
     <state x="237" y="175" key="SettingsEditor" timestamp="1624243977232">
       <screen x="83" y="34" width="1837" height="1046" />
     </state>

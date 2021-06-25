@@ -17,7 +17,7 @@ import time
 import warnings
 warnings.filterwarnings('ignore')
 
-class q_Informer(Basic):
+class q_Informer(Basic):#####该类加载数据集，训练网络
     def __init__(self, args):
         super(q_Informer, self).__init__(args)
     
@@ -26,13 +26,13 @@ class q_Informer(Basic):
             'informer':Informer,
         }
         e_layers = self.args.e_layers
-        model = model_dict[self.args.model](
+        model = model_dict[self.args.model](##
                 self.args.enc_in,
                 self.args.dec_in, 
                 self.args.c_out, 
                 self.args.seq_len, 
                 self.args.label_len,
-                self.args.pred_len, 
+                self.args.pred_len,
                 self.args.factor,
                 self.args.d_model, 
                 self.args.n_heads, 
@@ -50,8 +50,8 @@ class q_Informer(Basic):
                 self.device
             ).float()
         
-        if self.args.use_multi_gpu and self.args.use_gpu:
-            model = nn.DataParallel(model, device_ids=self.args.device_ids)
+        # if self.args.use_multi_gpu and self.args.use_gpu:
+        #     model = nn.DataParallel(model, device_ids=self.args.device_ids)
         return model
 
     def _get_data(self, flag):
@@ -72,8 +72,8 @@ class q_Informer(Basic):
         else:#  """args.freq 这个参数是什么意思"""
             shuffle_flag = True; drop_last = True; batch_size = args.batch_size; freq=args.freq
         data_set = Data(
-            root_path=args.root_path,
-            data_path=args.data_path,
+            gt_data_path=args.gt_data_path,
+            imu_data_path=args.imu_data_path,
             flag=flag,
             size=[args.seq_len, args.label_len, args.pred_len],
             freq=freq,
@@ -83,7 +83,7 @@ class q_Informer(Basic):
             #timeenc=timeenc,
             # cols=args.cols
         )
-        print(flag, len(data_set))
+        #print(flag, len(data_set))
         data_loader = DataLoader(
             data_set,
             batch_size=batch_size,
@@ -136,24 +136,24 @@ class q_Informer(Basic):
             scaler = torch.cuda.amp.GradScaler()
 
         for epoch in range(self.args.train_epochs):
+            # if(epoch==0):
+                #print("marker_start")
             iter_count = 0
             train_loss = []
             
             self.model.train()
             epoch_time = time.time()
-            for i, (times,seq_x) in enumerate(train_loader):
+            for i, (times_x,seq_x,seq_y) in enumerate(train_loader):
                 iter_count += 1
-                # print("check_batch_x")
-                # print(batch_x.shape)#torch.Size([32, 100, 7])
-                # print("check_batch_y")
-                # print(batch_y.shape)#torch.Size([32, 150, 7])
-                # print("check_batch_x_mark")
-                # print(batch_x_mark.shape)#torch.Size([32, 100, 5])
-                # print("check_batch_y_mark")
-                # print(batch_y_mark.shape)#torch.Size([32, 150, 5])
+                print("check_seq_x")
+                print(seq_x.shape)#torch.Size([b, s, f])
+                # print(seq_x)
+                print("check_seq_y")
+                print(seq_y.shape)#torch.Size([32, 150, 7])
+
                 model_optim.zero_grad()
                 pred, true = self._process_one_batch(
-                    train_data, times,seq_x)
+                    train_data,seq_x.float(),seq_y.float())#####这里有个精度转换
                 loss = criterion(pred, true)
                 train_loss.append(loss.item())
                 
@@ -256,27 +256,30 @@ class q_Informer(Basic):
     #
     #     return
 
-    def _process_one_batch(self, dataset_object, time, seq_x):
-        batch_x=seq_x
-
+    def _process_one_batch(self, dataset_object,  batch_x, batch_y):###时间编码相关已经删除
         # decoder input
         if self.args.padding==0:
             dec_inp = torch.zeros([batch_y.shape[0], self.args.pred_len, batch_y.shape[-1]]).float()
         elif self.args.padding==1:
             dec_inp = torch.ones([batch_y.shape[0], self.args.pred_len, batch_y.shape[-1]]).float()
         dec_inp = torch.cat([batch_y[:,:self.args.label_len,:], dec_inp], dim=1).float().to(self.device)
+        print("check_dec_inp.shape")
+        print(dec_inp.shape)#torch.Size([4, 100, 4])
+        # 100 = label_len+pred_len
         # encoder - decoder
         if self.args.use_amp:
             with torch.cuda.amp.autocast():
                 if self.args.output_attention:
-                    outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                    outputs = self.model(batch_x, dec_inp)[0]
                 else:
-                    outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                    outputs = self.model(batch_x, dec_inp)
         else:
             if self.args.output_attention:
-                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+
+                outputs = self.model(batch_x, dec_inp)[0]
             else:
-                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                # this way
+                outputs = self.model(batch_x, dec_inp)
         if self.args.inverse:
             outputs = dataset_object.inverse_transform(outputs)
         f_dim = -1 if self.args.features=='MS' else 0
