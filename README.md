@@ -1,8 +1,9 @@
 #### imu-predict
 
 ##文件夹说明：
-####	１．文件夹ground_truth　　采用数据集euroc 中的V1_01_easy 作为整个实验的测试 
-####	２．文件夹operation_test　一个简单的训练网络，目的是验证当前旋转lossfunction　的可行性
+####	1．文件夹informer_op中的　main_informer_quat.py 是整个模型的入口
+######训练命令　python -u main_informer_quat.py --model informer --data euroc_data
+
 
 ##实验思路：
 实验动机来源于以下两篇文章：
