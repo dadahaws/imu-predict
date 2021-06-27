@@ -117,8 +117,6 @@ class q_Informer(Basic):#####该类加载数据集，训练网络
         train_data, train_loader = self._get_data(flag = 'train')
         # vali_data, vali_loader = self._get_data(flag = 'val')
         # test_data, test_loader = self._get_data(flag = 'test')
-
-
 ####此处path 有点问题
         ###path = os.path.join(self.args.checkpoints, setting)
         # if not os.path.exists(path):
@@ -263,8 +261,8 @@ class q_Informer(Basic):#####该类加载数据集，训练网络
         elif self.args.padding==1:
             dec_inp = torch.ones([batch_y.shape[0], self.args.pred_len, batch_y.shape[-1]]).float()
         dec_inp = torch.cat([batch_y[:,:self.args.label_len,:], dec_inp], dim=1).float().to(self.device)
-        print("check_dec_inp.shape")
-        print(dec_inp.shape)#torch.Size([4, 100, 4])
+        #print("check_dec_inp.shape")
+        #print(dec_inp.shape)#torch.Size([4, 100, 4])
         # 100 = label_len+pred_len
         # encoder - decoder
         if self.args.use_amp:

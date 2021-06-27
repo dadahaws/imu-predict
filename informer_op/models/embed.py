@@ -109,10 +109,10 @@ class DataEmbedding(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x):###取消  x_mark
-        print("check_decode_1")
-        print(self.value_embedding(x).shape)
-        print("check_decode_2")
-        print(self.position_embedding(x).shape)
+        # print("check_decode_1")
+        # print(self.value_embedding(x).shape)
+        # print("check_decode_2")
+        # print(self.position_embedding(x).shape)
 
         x=self.value_embedding(x) + self.position_embedding(x)
         #x = self.value_embedding(x) + self.position_embedding(x) + self.temporal_embedding(x_mark)

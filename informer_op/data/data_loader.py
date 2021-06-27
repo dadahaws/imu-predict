@@ -11,9 +11,9 @@ class quat_estimation_informer(Dataset):
             self.label_len = 50
             self.pred_len = 100
         else:
-            self.seq_len = size[0]
-            self.label_len = size[1]
-            self.pred_len = size[2]
+            self.seq_len = size[0]##100
+            self.label_len = size[1]##50
+            self.pred_len = size[2]##50
         # init
         assert flag in ['train', 'test', 'val']
         type_map = {'train': 0, 'val': 1, 'test': 2}
